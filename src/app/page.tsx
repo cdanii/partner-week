@@ -175,11 +175,20 @@ export default function SchedulePage() {
     setEditingData(null);
   };
 
+  // State for export mode
+  const [isExporting, setIsExporting] = useState(false);
+
   // Create a ref for the FULL container (header + schedule)
   const fullContentRef = useRef<HTMLDivElement>(null);
 
   const handleExport = useCallback(async () => {
     if (!fullContentRef.current) return;
+
+    // 1. Enter Export Mode
+    setIsExporting(true);
+
+    // Wait for render update
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
       const { toBlob } = await import('html-to-image');
@@ -191,16 +200,22 @@ export default function SchedulePage() {
         pixelRatio: 3,
         width: 1200,
         filter: (node) => {
-          // Exclude the 'Download' button container
+          // Exclude the 'Download' button container based on ID
           if (node.id === 'controls-container') return false;
           return true;
         },
         style: {
-          padding: '40px',
+          // Force CSS Reset during Capture
           margin: '0',
+          padding: '40px',
           height: 'auto',
           maxWidth: 'none',
           width: '1200px',
+
+          // Ensure internal container constraints are removed
+          display: 'block',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
         }
       });
 
@@ -212,15 +227,30 @@ export default function SchedulePage() {
     } catch (err) {
       console.error(err);
       alert('Erro ao exportar.');
+    } finally {
+      // 2. Exit Export Mode
+      setIsExporting(false);
     }
   }, []);
 
   return (
-    // Attach ref to MAIN so it captures Header + Content
-    <main ref={fullContentRef} className="min-h-screen bg-slate-50 font-sans pb-20">
+    <main
+      ref={fullContentRef}
+      className={cn(
+        "min-h-screen bg-slate-50 font-sans pb-20 transition-all",
+        // When exporting, remove centering and constrain width to fit content left-aligned
+        isExporting ? "max-w-none mx-0 px-0 items-start justify-start w-[1200px]" : ""
+      )}
+    >
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className={cn(
+          "flex flex-col sm:flex-row items-center justify-between gap-4 py-4",
+          // Normal mode: Centered container with padding
+          !isExporting && "max-w-5xl mx-auto px-4 sm:px-6 md:px-8",
+          // Export mode: Remove max-w and unify padding
+          isExporting && "w-full px-10 max-w-none mx-0"
+        )}>
           <div className="text-center sm:text-left">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#011457] tracking-tight">
               Prodam Partners Week
@@ -240,7 +270,13 @@ export default function SchedulePage() {
       </header>
 
       {/* Scrollable Container */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8">
+      <div className={cn(
+        "py-8",
+        // Normal mode
+        !isExporting && "max-w-5xl mx-auto px-4 sm:px-6 md:px-8",
+        // Export mode: Remove container constraints
+        isExporting && "w-full px-10 max-w-none mx-0"
+      )}>
         <div ref={scheduleRef} className="bg-transparent rounded-xl">
           <div className="space-y-6">
             {schedule.map((day) => (
