@@ -241,7 +241,7 @@ export default function SchedulePage() {
 
       {/* Scrollable Container */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8">
-        <div ref={scheduleRef} className="bg-slate-50 p-2 sm:p-4 rounded-xl">
+        <div ref={scheduleRef} className="bg-transparent rounded-xl">
           <div className="space-y-6">
             {schedule.map((day) => (
               <div
