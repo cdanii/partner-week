@@ -179,32 +179,35 @@ export default function SchedulePage() {
     if (!scheduleRef.current) return;
 
     try {
-      const html2canvas = (await import('html2canvas')).default;
+      const { toBlob } = await import('html-to-image');
       const { saveAs } = await import('file-saver');
 
-      const canvas = await html2canvas(scheduleRef.current, {
-        scale: 2,
+      // Uses html-to-image (better modern CSS support) + file-saver (better mobile download)
+      const blob = await toBlob(scheduleRef.current, {
+        cacheBust: true,
         backgroundColor: '#f8fafc',
-        windowWidth: 1400, // Simulate desktop viewport
-        onclone: (clonedDoc) => {
-          // Ensure the captured element behaves like desktop
-          const el = clonedDoc.querySelector('[data-schedule-container]') as HTMLElement;
-          if (el) {
-            el.style.width = '1200px';
-            el.style.maxWidth = 'none';
-            el.style.padding = '40px';
-          }
+        pixelRatio: 3, // High quality
+        width: 1200, // Force Desktop Width
+        style: {
+          // Force desktop layout styles during capture
+          padding: '40px',
+          margin: '0',
+          height: 'auto',
+          maxWidth: 'none',
+          width: '1200px',
         }
       });
 
-      canvas.toBlob((blob) => {
-        if (blob) {
-          saveAs(blob, 'Prodam-Partners-Week-Cronograma.png');
-        }
-      });
+      if (blob) {
+        saveAs(blob, 'Prodam-Partners-Week-Cronograma.png');
+      } else {
+        alert('Erro ao gerar imagem (blob vazio).');
+      }
+
     } catch (err) {
       console.error('Export failed', err);
-      alert('Erro ao gerar imagem.');
+      // Fallback friendly error
+      alert('Erro ao gerar imagem. Tente usar um navegador diferente ou atualizar a página.');
     }
   }, []);
 
