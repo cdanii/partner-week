@@ -179,26 +179,32 @@ export default function SchedulePage() {
     if (!scheduleRef.current) return;
 
     try {
-      const dataUrl = await toPng(scheduleRef.current, {
-        cacheBust: true,
+      const html2canvas = (await import('html2canvas')).default;
+      const { saveAs } = await import('file-saver');
+
+      const canvas = await html2canvas(scheduleRef.current, {
+        scale: 2,
         backgroundColor: '#f8fafc',
-        pixelRatio: 3,
-        width: 1200, // Force desktop width for a poster-like look
-        style: {
-          padding: '40px',
-          margin: '0',
-          borderRadius: '0',
-          height: 'auto',
-          maxWidth: 'none',
-          width: '1200px', // Explicitly set width in style as well
-        },
+        windowWidth: 1400, // Simulate desktop viewport
+        onclone: (clonedDoc) => {
+          // Ensure the captured element behaves like desktop
+          const el = clonedDoc.querySelector('[data-schedule-container]') as HTMLElement;
+          if (el) {
+            el.style.width = '1200px';
+            el.style.maxWidth = 'none';
+            el.style.padding = '40px';
+          }
+        }
       });
-      const link = document.createElement('a');
-      link.download = 'Prodam-Partners-Week-Cronograma.png';
-      link.href = dataUrl;
-      link.click();
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          saveAs(blob, 'Prodam-Partners-Week-Cronograma.png');
+        }
+      });
     } catch (err) {
       console.error('Export failed', err);
+      alert('Erro ao gerar imagem.');
     }
   }, []);
 
