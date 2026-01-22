@@ -175,21 +175,27 @@ export default function SchedulePage() {
     setEditingData(null);
   };
 
+  // Create a ref for the FULL container (header + schedule)
+  const fullContentRef = useRef<HTMLDivElement>(null);
+
   const handleExport = useCallback(async () => {
-    if (!scheduleRef.current) return;
+    if (!fullContentRef.current) return;
 
     try {
       const { toBlob } = await import('html-to-image');
       const { saveAs } = await import('file-saver');
 
-      // Uses html-to-image (better modern CSS support) + file-saver (better mobile download)
-      const blob = await toBlob(scheduleRef.current, {
+      const blob = await toBlob(fullContentRef.current, {
         cacheBust: true,
         backgroundColor: '#f8fafc',
-        pixelRatio: 3, // High quality
-        width: 1200, // Force Desktop Width
+        pixelRatio: 3,
+        width: 1200,
+        filter: (node) => {
+          // Exclude the 'Download' button container
+          if (node.id === 'controls-container') return false;
+          return true;
+        },
         style: {
-          // Force desktop layout styles during capture
           padding: '40px',
           margin: '0',
           height: 'auto',
@@ -201,18 +207,17 @@ export default function SchedulePage() {
       if (blob) {
         saveAs(blob, 'Prodam-Partners-Week-Cronograma.png');
       } else {
-        alert('Erro ao gerar imagem (blob vazio).');
+        alert('Erro ao gerar imagem.');
       }
-
     } catch (err) {
-      console.error('Export failed', err);
-      // Fallback friendly error
-      alert('Erro ao gerar imagem. Tente usar um navegador diferente ou atualizar a página.');
+      console.error(err);
+      alert('Erro ao exportar.');
     }
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-50 font-sans pb-20">
+    // Attach ref to MAIN so it captures Header + Content
+    <main ref={fullContentRef} className="min-h-screen bg-slate-50 font-sans pb-20">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -222,13 +227,15 @@ export default function SchedulePage() {
             </h1>
             <p className="text-slate-500 text-sm sm:text-base">Cronograma de Apresentações</p>
           </div>
-          <Button
-            onClick={handleExport}
-            className="w-full sm:w-auto bg-[#011457] hover:bg-[#000d3d] text-white shadow-md active:scale-95 transition-all text-sm py-2.5 h-auto rounded-full"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Baixar Cronograma
-          </Button>
+          <div id="controls-container" className="w-full sm:w-auto">
+            <Button
+              onClick={handleExport}
+              className="w-full bg-[#011457] hover:bg-[#000d3d] text-white shadow-md active:scale-95 transition-all text-sm py-2.5 h-auto rounded-full"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Baixar Cronograma
+            </Button>
+          </div>
         </div>
       </header>
 
